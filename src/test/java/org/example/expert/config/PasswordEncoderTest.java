@@ -25,4 +25,5 @@ class PasswordEncoderTest {
         // then
         assertTrue(matches);
     }
+
 }
