@@ -16,8 +16,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.autoconfigure.pulsar.PulsarProperties;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.util.ObjectUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +28,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,7 +71,7 @@ class ManagerServiceTest {
 
         // when & then
         InvalidRequestException exception = assertThrows(InvalidRequestException.class, () ->
-            managerService.saveManager(authUser, todoId, managerSaveRequest)
+                managerService.saveManager(authUser, todoId, managerSaveRequest)
         );
 
         assertEquals("담당자를 등록하려고 하는 유저가 일정을 만든 유저가 유효하지 않습니다.", exception.getMessage());
@@ -96,7 +100,8 @@ class ManagerServiceTest {
         assertEquals(mockManager.getUser().getEmail(), managerResponses.get(0).getUser().getEmail());
     }
 
-    @Test // 테스트코드 샘플
+    @Test
+        // 테스트코드 샘플
     void todo가_정상적으로_등록된다() {
         // given
         AuthUser authUser = new AuthUser(1L, "a@a.com", UserRole.USER);
@@ -123,4 +128,28 @@ class ManagerServiceTest {
         assertEquals(managerUser.getId(), response.getUser().getId());
         assertEquals(managerUser.getEmail(), response.getUser().getEmail());
     }
+
+    @Test
+    public void 매니저를_삭제하는데_일정을_만든_user가_유효하지_경우_예외가_발생한다() {
+        // given
+        Long userId = 1L;
+        Long todoId = 1L;
+        Long managerUserId = 2L;
+
+        User validUser = new User("valid@example.com", "password", UserRole.USER);
+        User invalidUser = new User("invalid@example.com", "password", UserRole.USER);
+
+        Todo todo = new Todo();
+            // Given
+            given(userRepository.findById(1L)).willReturn(Optional.of(validUser));
+            given(todoRepository.findById(1L)).willReturn(Optional.of(todo));
+            todo.setUser(null);
+            // When & Then
+            InvalidRequestException thrown = assertThrows(InvalidRequestException.class, () -> {
+                managerService.deleteManager(1L, 1L, 1L);
+            });
+            assertEquals("해당 일정을 만든 유저가 유효하지 않습니다.", thrown.getMessage());
+
+    }
+
 }
